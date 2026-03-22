@@ -1,0 +1,32 @@
+import { test, expect } from '@playwright/test';
+import { loginAsSuperAdmin } from './helpers';
+import { CourseCenterPage } from '../src/pages/CourseCenterPage';
+
+test.describe('Course Center Search', () => {
+  let courseCenterPage: CourseCenterPage;
+
+  test('verify search functionality in Course Center Management @regression', async ({ page }) => {
+    // 1. Log in as Administrator
+    await loginAsSuperAdmin(page);
+
+    // 2. Navigate to Course Center Management page
+    courseCenterPage = new CourseCenterPage(page);
+    await courseCenterPage.navigate();
+
+    // 3. Search for "Nat" and verify result
+    await courseCenterPage.searchCourseCenter('Nat');
+    const natResults = await courseCenterPage.getSearchResults();
+    expect(natResults.some(text => text.includes('Nat OBGY'))).toBeTruthy();
+
+    // 4. Search for invalid input and verify no results
+    await courseCenterPage.searchCourseCenter('123!@#');
+    const noResults = await courseCenterPage.getSearchResults();
+    expect(noResults).toHaveLength(0);
+    await expect(page.getByText('Sorry. No results have been found')).toBeVisible();
+
+    // 5. Clear search and verify all centers are displayed
+    await courseCenterPage.clearSearch();
+    const allResults = await courseCenterPage.getSearchResults();
+    expect(allResults.length).toBeGreaterThan(0);
+  });
+});
